@@ -12,6 +12,7 @@ use PhpTwinfield\Request as Request;
 use PhpTwinfield\Mappers\ProjectMapper;
 use PhpTwinfield\DomDocuments\ProjectsDocument;
 use PhpTwinfield\Response\MappedResponseCollection;
+use PhpTwinfield\Services\FinderService;
 
 /**
  * A facade to make interaction with the the Twinfield service easier when trying to retrieve or send information about
