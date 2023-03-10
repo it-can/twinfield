@@ -50,37 +50,34 @@ class ProjectApiConnector extends BaseApiConnector
         return ProjectMapper::map($response);
     }
 
-    /**
-     * Requests all customers from the List Dimension Type.
-     *
-     * @param Office $office
-     *
-     * @return array A multidimensional array in the following form:
-     *               [$customerId => ['name' => $name, 'shortName' => $shortName], ...]
-     *
-     * @throws Exception
-     */
-    public function listAll(Office $office): array
+    public function listAll(
+        string $pattern = '*',
+        int $field = 0,
+        int $firstRow = 1,
+        int $maxRows = 100,
+        array $options = []
+    ): array
     {
-        // Make a request to a list of all customers
-        $request_projects = new Request\Catalog\Dimension($office, "PRJ");
+        $response = $this->getFinderService()
+            ->searchFinder(
+                FinderService::TYPE_DIMENSIONS_FINANCIALS,
+                $pattern,
+                $field,
+                $firstRow,
+                $maxRows,
+                $options
+            );
 
-        // Send the Request document and set the response to this instance.
-        $response = $this->sendXmlDocument($request_projects);
+        if ($response->data->TotalRows == 0) {
+            return [];
+        }
 
-        // Get the raw response document
-        $responseDOM = $response->getResponseDocument();
-
-        // Prepared empty customer array
         $projects = [];
-
-        // Store in an array by customer id
-        /** @var \DOMElement $project */
-        foreach ($responseDOM->getElementsByTagName('dimension') as $project) {
-            $projects[$project->textContent] = [
-                'name'      => $project->getAttribute('name'),
-                'shortName' => $project->getAttribute('shortname'),
-            ];
+        foreach ($response->data->Items->ArrayOfString as $projectAccountArray) {
+            $project = new Project();
+            $project->setCode($projectAccountArray[0]);
+            $project->setName($projectAccountArray[1]);
+            $projects[] = $project;
         }
 
         return $projects;
