@@ -61,7 +61,7 @@ class ProjectApiConnector extends BaseApiConnector
     {
         $response = $this->getFinderService()
             ->searchFinder(
-                FinderService::TYPE_DIMENSIONS_FINANCIALS,
+                FinderService::TYPE_DIMENSIONS_PROJECTS,
                 $pattern,
                 $field,
                 $firstRow,
