@@ -46,8 +46,6 @@ class ProjectApiConnector extends BaseApiConnector
         // Send the Request document and set the response to this instance.
         $response = $this->sendXmlDocument($request_project);
 
-        dd($response, ProjectMapper::map($response));
-
         return ProjectMapper::map($response);
     }
 
