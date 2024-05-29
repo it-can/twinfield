@@ -11,6 +11,7 @@ use PhpTwinfield\Transactions\TransactionLineFields\FreeCharField;
 use PhpTwinfield\Transactions\TransactionLineFields\ThreeDimFields;
 use PhpTwinfield\Transactions\TransactionLineFields\ValueFields;
 use PhpTwinfield\Transactions\TransactionLineFields\VatTurnoverFields;
+use PhpTwinfield\Transactions\TransactionFields\FreeTextFields;
 
 /**
  * @todo $relation Only if line type is total (or detail for Journal and Cash transactions). Read-only attribute.
@@ -30,6 +31,7 @@ abstract class BaseTransactionLine implements TransactionLine
     use VatTurnoverFields;
     use CommentField;
     use FreeCharField;
+    use FreeTextFields;
 
     public const MATCHSTATUS_AVAILABLE    = 'available';
     public const MATCHSTATUS_MATCHED      = 'matched';
