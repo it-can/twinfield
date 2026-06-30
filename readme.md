@@ -328,6 +328,28 @@ support for another resource.
 
 * [Twinfield API Documentation site](https://accounting.twinfield.com/webservices/documentation/)
 
+## Development
+
+Clone the repository:
+
+```bash
+git clone git@github.com:php-twinfield/twinfield.git
+# navigate to cloned repository
+cd twinfield
+```
+
+To set up the development environment, run:
+
+```bash
+composer install
+```
+
+To run the tests, use:
+
+```bash
+vendor/bin/phpunit
+```
+
 
 ## Authors
 

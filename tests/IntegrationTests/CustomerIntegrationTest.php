@@ -2,11 +2,14 @@
 
 namespace PhpTwinfield\IntegrationTests;
 
+use Money\Currency;
 use PhpTwinfield\ApiConnectors\CustomerApiConnector;
 use PhpTwinfield\Customer;
 use PhpTwinfield\CustomerAddress;
 use PhpTwinfield\CustomerBank;
 use PhpTwinfield\CustomerCollectMandate;
+use PhpTwinfield\CustomerPostingRule;
+use PhpTwinfield\Customers\Line;
 use PhpTwinfield\DomDocuments\CustomersDocument;
 use PhpTwinfield\Enums\CollectionSchema;
 use PhpTwinfield\Enums\MeansOfPayment;
@@ -217,6 +220,15 @@ class CustomerIntegrationTest extends BaseIntegrationTest
         $customer->setCollectMandate($collectMandate);
 
         $customer->setCollectionSchema(CollectionSchema::CORE());
+
+        $rule = new CustomerPostingRule();
+        $rule->setID(1);
+        $rule->setStatus('active');
+        $rule->setCurrency(new Currency('EUR'));
+        $line = new Line();
+        $line->setDimension1(1300);
+        $rule->addLine($line);
+        $customer->addPostingRule($rule);
 
         $this->processXmlService
             ->expects($this->once())

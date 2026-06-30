@@ -4,17 +4,21 @@ namespace PhpTwinfield\ApiConnectors;
 
 final class ApiOptions
 {
+    private const RATE_LIMITED_MESSAGE = 'Too Many Requests';
+
     private $retriableExceptionMessages = [
         "SSL: Connection reset by peer",
-        "Your logon credentials are not valid anymore. Try to log on again."
+        "Your logon credentials are not valid anymore. Try to log on again.",
     ];
 
     private $maxRetries = 3;
 
+    private $useRetryAfterHeader;
+
     /**
      * @throws \InvalidArgumentException
      */
-    public function __construct(?array $messages = null, ?int $maxRetries = null)
+    public function __construct(?array $messages = null, ?int $maxRetries = null, bool $useRetryAfterHeader = false)
     {
         if ($messages !== null) {
             $this->validateMessages($messages);
@@ -24,6 +28,8 @@ final class ApiOptions
             $this->validateMaxRetries($maxRetries);
             $this->maxRetries = $maxRetries;
         }
+
+        $this->useRetryAfterHeader = $useRetryAfterHeader;
     }
 
     /**
@@ -55,7 +61,12 @@ final class ApiOptions
      */
     public function getRetriableExceptionMessages(): array
     {
-        return $this->retriableExceptionMessages;
+        $messages = $this->retriableExceptionMessages;
+        if ($this->useRetryAfterHeader) {
+            $messages[] = self::RATE_LIMITED_MESSAGE;
+        }
+
+        return $messages;
     }
 
     /**
@@ -65,7 +76,8 @@ final class ApiOptions
     {
         return new self(
             $retriableExceptionMessages,
-            $this->maxRetries
+            $this->maxRetries,
+            $this->useRetryAfterHeader
         );
     }
 
@@ -76,7 +88,8 @@ final class ApiOptions
     {
         return new self(
             array_merge($messages, $this->retriableExceptionMessages),
-            $this->maxRetries
+            $this->maxRetries,
+            $this->useRetryAfterHeader
         );
     }
 
@@ -95,7 +108,22 @@ final class ApiOptions
     {
         return new self(
             $this->retriableExceptionMessages,
-            $maxRetries
+            $maxRetries,
+            $this->useRetryAfterHeader
+        );
+    }
+
+    public function getUseRetryAfterHeader(): bool
+    {
+        return $this->useRetryAfterHeader;
+    }
+
+    public function setUseRetryAfterHeader(bool $useRetryAfterHeader): ApiOptions
+    {
+        return new self(
+            $this->retriableExceptionMessages,
+            $this->maxRetries,
+            $useRetryAfterHeader
         );
     }
 }

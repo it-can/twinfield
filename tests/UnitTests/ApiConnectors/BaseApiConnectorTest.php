@@ -418,6 +418,56 @@ class BaseApiConnectorTest extends TestCase implements LoggerInterface
         self::assertEmpty($context);
     }
 
+    public function testRetryDelayIsLoggedAndApplied()
+    {
+        $options = new ApiOptions(null, null, true);
+
+        $request_document = new \DOMDocument();
+        $request_document->loadXML('<dimension>value</dimension>');
+
+        $response = Response::fromString('<dimension result="1">value</dimension>');
+
+        $this->connection->expects($this->any())
+            ->method("getAuthenticatedClient")
+            ->with(Services::PROCESSXML())
+            ->willReturn($this->client);
+
+        // First attempt fails with a retriable error, second attempt succeeds
+        $this->client->expects($this->any())
+            ->method("sendDocument")
+            ->will($this->onConsecutiveCalls(
+                $this->throwException(new \SoapFault('Client', 'Too Many Requests')),
+                $this->returnValue($response)
+            ));
+
+        // Simulate Twinfield returning a Retry-After header of 1 second
+        $this->client->expects($this->any())
+            ->method('__getLastResponseHeaders')
+            ->willReturn("HTTP/1.1 429 Too Many Requests\r\nRetry-After: 1\r\n");
+
+        // Use a partial mock to intercept sleep
+        $service = $this->getMockBuilder(BaseApiConnector::class)
+            ->setConstructorArgs([$this->connection, $options])
+            ->onlyMethods(['sleep'])
+            ->getMockForAbstractClass();
+        $service->expects($this->once())
+            ->method('sleep');
+
+        $service->setLogger($this);
+        $service->sendXmlDocument($request_document);
+
+        self::assertCount(5, $this->logs);
+
+        [$level, $message] = array_slice($this->logs[1], 0, 2);
+        self::assertSame(LogLevel::INFO, $level);
+        self::assertSame('Waiting 1 seconds before retrying request.', $message);
+
+        [$level, $message, $context] = $this->logs[2];
+        self::assertSame(LogLevel::INFO, $level);
+        self::assertSame('Retrying request. Reason for initial failure: Too Many Requests', $message);
+        self::assertEmpty($context);
+    }
+
     public function testOverrideMessagesAndThrowSSLError()
     {
         $customErrorMessage = 'my custom error message';

@@ -58,6 +58,7 @@ class Customer
     private $creditManagement;
     private $addresses = array();
     private $banks = array();
+    private $postingRules = array();
     private $groups;
 
     public function getCode()
@@ -389,6 +390,27 @@ class Customer
     {
         if (array_key_exists($index, $this->banks)) {
             unset($this->banks[$index]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function getPostingRules()
+    {
+        return $this->postingRules;
+    }
+
+    public function addPostingRule(CustomerPostingRule $postingrule)
+    {
+        $this->postingRules[$postingrule->getID()] = $postingrule;
+        return $this;
+    }
+
+    public function removePostingRule($index)
+    {
+        if (array_key_exists($index, $this->postingRules)) {
+            unset($this->postingRules[$index]);
             return true;
         } else {
             return false;

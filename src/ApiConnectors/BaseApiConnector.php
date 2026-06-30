@@ -4,6 +4,7 @@ namespace PhpTwinfield\ApiConnectors;
 
 use PhpTwinfield\Enums\Services;
 use PhpTwinfield\Exception;
+use PhpTwinfield\Response\HeaderBag;
 use PhpTwinfield\Response\MappedResponseCollection;
 use PhpTwinfield\Response\Response;
 use PhpTwinfield\Secure\AuthenticatedConnection;
@@ -29,6 +30,11 @@ abstract class BaseApiConnector implements LoggerAwareInterface
      * @var int
      */
     private $numRetries = 0;
+
+    /**
+     * @var int
+     */
+    private $retryDelay = 0;
 
     /**
      * @var ApiOptions
@@ -74,15 +80,22 @@ abstract class BaseApiConnector implements LoggerAwareInterface
      */
     public function sendXmlDocument(\DOMDocument $document) {
         $this->logSendingDocument($document);
+        $service = null;
 
         try {
-            $response = $this->getProcessXmlService()->sendDocument($document);
+            $service = $this->getProcessXmlService();
+            $response = $service->sendDocument($document);
             $this->numRetries = 0;
 
             $this->logResponse($response);
 
             return $response;
         } catch (\SoapFault | \ErrorException $exception) {
+            /* Set retry delay from client's last response header before reset */
+            if ($service !== null && $this->getOptions()->getUseRetryAfterHeader()) {
+                $this->setRetryDelayFromHeaders($service->__getLastResponseHeaders());
+            }
+
             /*
              * Always reset the client. There may have been TCP connection issues, network issues,
              * or logic issues on Twinfield's side, it won't hurt to get a fresh connection.
@@ -100,6 +113,11 @@ abstract class BaseApiConnector implements LoggerAwareInterface
                     break;
                 }
 
+                if ($this->retryDelay > 0) {
+                    $this->logSleep();
+                    $this->sleep();
+                }
+
                 $this->logRetry($exception);
                 return $this->sendXmlDocument($document);
             }
@@ -110,10 +128,28 @@ abstract class BaseApiConnector implements LoggerAwareInterface
         }
     }
 
+    /**
+     * @param string|null $rawHeaders
+     * @return void
+     */
+    public function setRetryDelayFromHeaders(?string $rawHeaders): void
+    {
+        $headers = HeaderBag::fromString($rawHeaders ?? '');
+        $this->retryDelay = (int)$headers->get("Retry-After", "0");
+    }
+
     final protected function unwrapSingleResponse(MappedResponseCollection $responses) {
         Assert::count($responses, 1);
 
         return $responses->getIterator()->current()->unwrap();
+    }
+
+    /**
+     * Indirection for sleep to allow mocking in tests.
+     */
+    protected function sleep(): void
+    {
+        sleep($this->retryDelay);
     }
 
     private function logSendingDocument(\DOMDocument $document): void
@@ -156,6 +192,15 @@ abstract class BaseApiConnector implements LoggerAwareInterface
         }
 
         $this->logger->info("Retrying request. Reason for initial failure: {$e->getMessage()}");
+    }
+
+    private function logSleep(): void
+    {
+        if (!$this->logger) {
+            return;
+        }
+
+        $this->logger->info("Waiting {$this->retryDelay} seconds before retrying request.");
     }
 
     private function logFailedRequest(\Throwable $e): void

@@ -54,5 +54,23 @@
 				</address>
 			</bank>
 		</banks>
+        <postingrules>
+            <postingrule id="1" status="active">
+                <currency>EUR</currency>
+                <amount></amount>
+                <description></description>
+                <lines>
+                    <line>
+                        <office></office>
+                        <dimension1>1300</dimension1>
+                        <dimension2></dimension2>
+                        <dimension3></dimension3>
+                        <ratio></ratio>
+                        <vatcode></vatcode>
+                        <description></description>
+                    </line>
+                </lines>
+            </postingrule>
+        </postingrules>
 	</dimension>
 </dimensions>

@@ -309,6 +309,73 @@ class CustomersDocument extends BaseDocument
             }
         }
 
+        $postingRules = $customer->getPostingRules();
+        if (!empty($postingRules)) {
+            $postingrulesElement = $this->createElement('postingrules');
+            $customerEl->appendChild($postingrulesElement);
+
+            foreach ($postingRules as $postingRule) {
+                $postingRuleElement = $this->createElement('postingrule');
+                $postingrulesElement->appendChild($postingRuleElement);
+
+                $postingRuleElement->setAttribute("id", $postingRule->getID());
+                $postingRuleElement->setAttribute("status", $postingRule->getStatus());
+
+                $postingRuleTags = array(
+                    'currency'      => 'getCurrency',
+                    'amount'        => 'getAmount',
+                    'description'   => 'getDescription',
+                );
+
+                foreach ($postingRuleTags as $tag => $method) {
+
+                    // Make the text node for the method value
+                    $node = $this->createTextNode($postingRule->$method()  ?? '');
+
+                    // Make the actual element and assign the text node
+                    $element = $this->createElement($tag);
+                    $element->appendChild($node);
+
+                    // Add the completed element
+                    $postingRuleElement->appendChild($element);
+                }
+
+                $lines = $postingRule->getLines();
+                if (!empty($lines)) {
+                    $linesElement = $this->createElement('lines');
+                    $postingRuleElement->appendChild($linesElement);
+
+                    foreach ($lines as $line) {
+                        $lineElement = $this->createElement('line');
+                        $linesElement->appendChild($lineElement);
+
+                        $lineTags = array(
+                            'office' => 'getOffice',
+                            'dimension1' => 'getDimension1',
+                            'dimension2' => 'getDimension2',
+                            'dimension3' => 'getDimension3',
+                            'ratio' => 'getRatio',
+                            'vatcode' => 'getVatCode',
+                            'description' => 'getDescription',
+                        );
+
+                        foreach ($lineTags as $tag => $method) {
+
+                            // Make the text node for the method value
+                            $node = $this->createTextNode($line->$method()  ?? '');
+
+                            // Make the actual element and assign the text node
+                            $element = $this->createElement($tag);
+                            $element->appendChild($node);
+
+                            // Add the completed element
+                            $lineElement->appendChild($element);
+                        }
+                    }
+                }
+            }
+        }
+
         $this->rootElement->appendChild($customerEl);
     }
 }
